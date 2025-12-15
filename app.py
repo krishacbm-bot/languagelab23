@@ -32,7 +32,12 @@ def module_page():
 @app.route("/word.html")
 def word_page():
     return render_template("word.html")
-
+    
+@app.route("/<page>")
+def render_any_page(page):
+    if page.endswith(".html"):
+        return render_template(page)
+    return "Not Found", 404
 @app.route("/sentence.html")
 def sentence_page():
     return render_template("sentence.html")
