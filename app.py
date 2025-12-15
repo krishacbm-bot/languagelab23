@@ -1,63 +1,82 @@
-from flask import Flask, request, jsonify, render_template
-import difflib
-import os
+from flask import Flask, render_template, request, jsonify
 import random
-import wave
-from vosk import Model, KaldiRecognizer
-import json
+import requests
 
 app = Flask(__name__)
 
-# Load Vosk model
-model_path = os.path.join(os.getcwd(), "model")
-model = Model(model_path)
+# ---------------- Sample word bank ----------------
+word_bank = {
+    "jr_kg": {"easy": ["cat", "dog"], "medium": ["fish", "bird"], "hard": ["tiger", "elephant"]},
+    "sr_kg": {"easy": ["apple", "ball"], "medium": ["chair", "table"], "hard": ["giraffe", "monkey"]},
+    "1": {"easy": ["sun", "moon"], "medium": ["house", "tree"], "hard": ["computer", "bicycle"]}
+}
 
-# Sentence bank
-sentences = [
-    "the sun rises in the east",
-    "she sells seashells by the seashore",
-    "reading books improves knowledge"
-]
+# ---------------- Sample sentences ----------------
+sentence_bank = {
+    "1": {
+        "easy": ["I like cats.", "The sun is bright."],
+        "medium": ["My house has a big garden.", "She is reading a book."],
+        "hard": ["The computer is very fast.", "We went to the zoo yesterday."]
+    }
+}
 
+# ---------------- Pages ----------------
 @app.route("/")
-def index():
+def home():
     return render_template("index.html")
 
-@app.route("/get_sentence", methods=["GET"])
+@app.route("/word.html")
+def word_page():
+    return render_template("word.html")
+
+@app.route("/sentence.html")
+def sentence_page():
+    return render_template("sentence.html")
+
+# ---------------- APIs ----------------
+@app.route("/get_word")
+def get_word():
+    grade = request.args.get("grade")
+    level = request.args.get("level")
+    words = word_bank.get(grade, {}).get(level, ["hello"])
+    return jsonify({"word": random.choice(words)})
+
+@app.route("/get_sentence")
 def get_sentence():
-    sentence = random.choice(sentences)
-    return jsonify({"sentence": sentence})
+    grade = request.args.get("grade")
+    level = request.args.get("level")
+    sentences = sentence_bank.get(grade, {}).get(level, ["Hello world."])
+    return jsonify({"sentence": random.choice(sentences)})
 
-@app.route("/evaluate", methods=["POST"])
-def evaluate():
-    audio_file = request.files["audio"]
-    audio_path = "student.wav"
-    audio_file.save(audio_path)
+@app.route("/check_sentence", methods=["POST"])
+def check_sentence():
+    sentence = request.form.get("sentence", "")
 
-    wf = wave.open(audio_path, "rb")
-    rec = KaldiRecognizer(model, wf.getframerate())
-    text_result = ""
+    try:
+        response = requests.post(
+            "https://api.languagetool.org/v2/check",
+            data={"text": sentence, "language": "en-US"},
+            timeout=10
+        )
+        result = response.json()
 
-    while True:
-        data = wf.readframes(4000)
-        if len(data) == 0:
-            break
-        if rec.AcceptWaveform(data):
-            text_result += rec.Result()
+        corrected = sentence
+        matches = result.get("matches", [])
+        matches.sort(key=lambda x: x["offset"], reverse=True)
 
-    text_result += rec.FinalResult()
-    spoken = json.loads(text_result).get("text", "")
+        for m in matches:
+            if m.get("replacements"):
+                corrected = (
+                    corrected[:m["offset"]] +
+                    m["replacements"][0]["value"] +
+                    corrected[m["offset"] + m["length"]:]
+                )
 
-    correct_sentence = request.form.get("correct_sentence").lower()
-    score = difflib.SequenceMatcher(None, correct_sentence, spoken.lower()).ratio() * 100
-    result = "✅ Pass" if score >= 70 else "❌ Try Again"
+        return jsonify({"corrected": corrected, "matches": matches})
 
-    return jsonify({
-        "spoken": spoken,
-        "score": round(score,2),
-        "result": result,
-        "correct_sentence": correct_sentence
-    })
+    except Exception as e:
+        return jsonify({"corrected": sentence, "error": str(e)})
 
+# ---------------- Run App ----------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
