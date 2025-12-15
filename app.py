@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import random
 import requests
 
-app = Flask(__name__)
+app = Flask(__name__)  # ⬅️ DO NOT set template_folder manually
 
 # ---------------- Sample word bank ----------------
 word_bank = {
@@ -24,23 +24,10 @@ sentence_bank = {
 @app.route("/")
 def home():
     return render_template("index.html")
-    
-@app.route("/module.html")
-def module_page():
-    return render_template("module.html")
-    
-@app.route("/word.html")
-def word_page():
-    return render_template("word.html")
-    
+
 @app.route("/<page>")
-def render_any_page(page):
-    if page.endswith(".html"):
-        return render_template(page)
-    return "Not Found", 404
-@app.route("/sentence.html")
-def sentence_page():
-    return render_template("sentence.html")
+def pages(page):
+    return render_template(page)
 
 # ---------------- APIs ----------------
 @app.route("/get_word")
@@ -61,31 +48,24 @@ def get_sentence():
 def check_sentence():
     sentence = request.form.get("sentence", "")
 
-    try:
-        response = requests.post(
-            "https://api.languagetool.org/v2/check",
-            data={"text": sentence, "language": "en-US"},
-            timeout=10
-        )
-        result = response.json()
+    response = requests.post(
+        "https://api.languagetool.org/v2/check",
+        data={"text": sentence, "language": "en-US"},
+        timeout=10
+    )
 
-        corrected = sentence
-        matches = result.get("matches", [])
-        matches.sort(key=lambda x: x["offset"], reverse=True)
+    result = response.json()
+    corrected = sentence
+    matches = result.get("matches", [])
+    matches.sort(key=lambda x: x["offset"], reverse=True)
 
-        for m in matches:
-            if m.get("replacements"):
-                corrected = (
-                    corrected[:m["offset"]] +
-                    m["replacements"][0]["value"] +
-                    corrected[m["offset"] + m["length"]:]
-                )
+    for m in matches:
+        if m.get("replacements"):
+            corrected = (
+                corrected[:m["offset"]] +
+                m["replacements"][0]["value"] +
+                corrected[m["offset"] + m["length"]:]
+            )
 
-        return jsonify({"corrected": corrected, "matches": matches})
+    return jsonify({"corrected": corrected})
 
-    except Exception as e:
-        return jsonify({"corrected": sentence, "error": str(e)})
-
-# ---------------- Run App ----------------
-if __name__ == "__main__":
-    app.run()
