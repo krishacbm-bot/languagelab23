@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import random
 import requests
 
-app = Flask(__name__, template_folder="language_lab/templates")
+app = Flask(__name__)
 
 # ---------------- Sample word bank ----------------
 word_bank = {
