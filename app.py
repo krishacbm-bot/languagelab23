@@ -24,7 +24,11 @@ sentence_bank = {
 @app.route("/")
 def home():
     return render_template("index.html")
-
+    
+@app.route("/module.html")
+def module_page():
+    return render_template("module.html")
+    
 @app.route("/word.html")
 def word_page():
     return render_template("word.html")
