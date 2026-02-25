@@ -160,6 +160,12 @@ top: 15px;
   transform: scale(1.08);
   box-shadow: 0 6px 16px rgba(0,0,0,0.25);
 }
+.nav-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 15px;
+}
 </style>
 </head>
 <body>
@@ -208,7 +214,7 @@ top: 15px;
   <!-- UI -->
   <div class="ui">
     <div class="title">🌟 Space Listening & Writing Adventure</div>
-    <button id="backBtn" class="back-btn">⬅️ Back</button>
+<button id="backBtn" class="back-btn">⬅️ Back</button>
     <div class="levels">
       <button class="level-btn active" data-level="easy">Easy</button>
       <button class="level-btn" data-level="medium">Medium</button>
@@ -222,6 +228,10 @@ top: 15px;
 <div class="footer-buttons">
   <button class="btn" id="checkBtn">Check</button>
   <button class="btn" id="downloadReport">Download Report</button>
+  
+  <button class="btn" id="prevBtn">⬅️ Previous</button>
+  <button class="btn" id="nextBtn">Next ➡️</button>
+</div>
 </div>
       <!-- <button class="btn" id="nextBtn">Next ➜</button> -->
     </div>
@@ -273,19 +283,39 @@ let score = 0;
 let attempts = 0;
 let currentDeck = decks[level];
 let reportData = [];
-// ✅ Speech
+
+// ✅ Speech — Prefer Indian English voices
 function speak(text) {
   if (!window.speechSynthesis) return;
+
   const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-IN";     // FORCE Indian English
+  u.rate = 0.9;        // Slightly slower (more natural for kids)
+  u.pitch = 1.0;
+
   const voices = window.speechSynthesis.getVoices();
+
   if (voices.length) {
-    const prefer = voices.find(v => /child|female|en/i.test(v.name)) || voices[0];
-    u.voice = prefer;
+    // 1️⃣ Try pure Indian voices first
+    let indianVoice =
+      voices.find(v => v.lang === "en-IN") ||
+      voices.find(v => /india|indian/i.test(v.name)) ||
+
+      // 2️⃣ Indian-accent English voices (Android / Windows)
+      voices.find(v => v.lang.startsWith("en-IN")) ||
+
+      // 3️⃣ Neutral English fallback (NOT US preferred)
+      voices.find(v => v.lang === "en-GB") ||
+
+      // 4️⃣ Absolute fallback
+      voices[0];
+
+    if (indianVoice) u.voice = indianVoice;
   }
+
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(u);
 }
-
 // ✅ Rocket animation path
 const rocketPath = [
   { x: 10, y: 80 }, { x: 70, y: 20 }, { x: 85, y: 40 },
@@ -454,7 +484,42 @@ nextModuleBtn.addEventListener('click', () => {
   window.location.href = 'word.html';
 });
 
-// ✅ Initialize first deck
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("backBtn").onclick = () => history.back();
+});
+
+// ⬅️ Previous button
+prevBtn.addEventListener('click', () => {
+  if (index === 0) {
+    showPopup("🚫 This is the first question", 1500);
+    speak("This is the first question");
+    return;
+  }
+
+  index--;
+  attempts = 0;
+  qText.textContent = currentDeck[index].q;
+  answerInput.value = "";
+
+  showPopup(" Previous question", 1000);
+});
+
+// ➡️ Next button
+nextBtn.addEventListener('click', () => {
+  if (index >= currentDeck.length - 1) {
+    showPopup("🚫 This is the last question", 1500);
+    speak("This is the last question");
+    return;
+  }
+
+  index++;
+  attempts = 0;
+  qText.textContent = currentDeck[index].q;
+  answerInput.value = "";
+
+  showPopup(" Next question", 1000);
+});
 loadDeck('easy');
 </script>
 </body>
