@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -208,26 +209,50 @@ function recordAttempt(word, correct) {
   });
 }
 
-// --- Speech / TTS ---
+/// 🇮🇳 --- Speech / TTS (Indian English preferred) ---
+function getIndianVoice() {
+  const voices = speechSynthesis.getVoices();
+
+  return (
+    voices.find(v => v.lang === "en-IN") ||
+    voices.find(v => /india|indian/i.test(v.name)) ||
+    voices.find(v => v.lang.startsWith("en-IN")) ||
+    voices.find(v => v.lang === "en-GB") || // neutral fallback
+    voices[0]
+  );
+}
+
 function speakMessage(msg) {
+  if (!window.speechSynthesis) return;
+
   const u = new SpeechSynthesisUtterance(msg);
-  u.pitch = 1; u.rate = 1;
+  u.lang = "en-IN";
+  u.voice = getIndianVoice();
+  u.pitch = 1;
+  u.rate = 0.9; // child-friendly
+
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }
 
 function playTTS(text) {
+  if (!window.speechSynthesis) return;
+
   const u = new SpeechSynthesisUtterance(text);
-  u.pitch = 1; u.rate = 0.9;
+  u.lang = "en-IN";
+  u.voice = getIndianVoice();
+  u.pitch = 1;
+  u.rate = 0.8; // clearer listening practice
+
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }
-
 // --- HUD & Render ---
 function updateHUD() {
   wordCount.textContent = `Word: ${wordIdx + 1}/${LEVELS[levelIdx].words.length}`;
   scoreBadge.textContent = `Score: ${score}`;
 }
+
 
 function renderWord() {
   const w = LEVELS[levelIdx].words[wordIdx];
@@ -238,7 +263,20 @@ function renderWord() {
 
 // --- Similarity check ---
 function similarity(a, b) {
-  return a.trim().toLowerCase() === b.trim().toLowerCase() ? 1 : 0;
+  a = a.toLowerCase().trim();
+  b = b.toLowerCase().trim();
+
+  if (a === b) return 1;
+
+  // Allow 1 letter difference
+  if (Math.abs(a.length - b.length) > 1) return 0;
+
+  let differences = 0;
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    if (a[i] !== b[i]) differences++;
+  }
+
+  return differences <= 1 ? 0.8 : 0;
 }
 
 // --- Portal ---
@@ -370,59 +408,69 @@ function hardLevelAction(word) {
     item.remove();
   };
 }
+let easyPartIdx = 0; // Tracks which part to assemble in Easy level
+
 function onCorrect() {
-  recordAttempt(LEVELS[levelIdx].words[wordIdx], true);
+  const currentWord = LEVELS[levelIdx].words[wordIdx];
+  recordAttempt(currentWord, true);
   feedback.innerHTML = '<span style="color:#0ff;font-weight:800">Correct ✅</span>';
   score += 10;
   updateHUD();
 
+  triggerPortal(true);
+
+  // --- Level-specific actions ---
   if (levelIdx === 0) {
+    // Easy Level: assemble robot part
     robot1.classList.add('show');
     robotAction();
     assembleNextPart();
+  } else if (levelIdx === 1) {
+    // Medium Level: kick football
+    kickFootball();
+  } else if (levelIdx === 2) {
+    // Hard Level: falling word
+    hardLevelAction(currentWord);
   }
 
-  if (levelIdx === 1) kickFootball();  // Only Medium level uses football
-  if (levelIdx === 2) hardLevelAction(LEVELS[levelIdx].words[wordIdx]); // Hard level uses falling words
+  // Move to next word
+  wordIdx++;
 
-  triggerPortal(true);
-
-  setTimeout(() => {
-    if (wordIdx < LEVELS[levelIdx].words.length - 1) {
-      wordIdx++; 
-      renderWord();
+  // --- Check if level complete ---
+  if (wordIdx >= LEVELS[levelIdx].words.length) {
+    if (levelIdx === 0) {
+      speakMessage("Great job! Easy level complete. Medium level starts now!");
+      feedback.innerHTML = '<span style="color:#ff0;font-weight:800"> Easy Level Complete!</span>';
+      setTimeout(() => {
+        levelIdx = 1;
+        wordIdx = 0;
+        levelBadge.textContent = 'Level: Medium';
+        renderWord();
+      }, 2000);
+    } else if (levelIdx === 1) {
+      speakMessage("Great job! Medium level complete. Hard level starts now!");
+      feedback.innerHTML = '<span style="color:#ff0;font-weight:800"> Medium Level Complete!</span>';
+      setTimeout(() => {
+        levelIdx = 2;
+        wordIdx = 0;
+        levelBadge.textContent = 'Level: Hard';
+        renderWord();
+      }, 2000);
     } else {
-      if (levelIdx === 0) {
-        speakMessage("Great job! Easy level complete. Medium level starts now!");
-        feedback.innerHTML = '<span style="color:#ff0;font-weight:800"> Easy Level Complete!</span>';
-        setTimeout(() => {
-          levelIdx = 1;
-          wordIdx = 0;
-          levelBadge.textContent = 'Level: Medium';
-          renderWord();
-        }, 2000);
-      } else if (levelIdx === 1) {
-        speakMessage("Great job! Medium level complete. Hard level starts now!");
-        feedback.innerHTML = '<span style="color:#ff0;font-weight:800"> Medium Level Complete! </span>';
-        setTimeout(() => {
-          levelIdx = 2;
-          wordIdx = 0;
-          levelBadge.textContent = 'Level: Hard';
-          renderWord();
-        }, 2000);
-      } else {
-        // Hard level completed → show buttons
-        speakMessage("Amazing! You finished the Hard Level!");
-        feedback.innerHTML = '<span style="color:#ff0;font-weight:800"> All Levels Completed!</span>';
+      speakMessage("Amazing! You finished the Hard Level!");
+      feedback.innerHTML = '<span style="color:#ff0;font-weight:800"> All Levels Completed!</span>';
 
-        const postBtns = document.getElementById('postHardBtns');
-        postBtns.style.display = 'flex';
-        postBtns.style.justifyContent = 'center';
-        postBtns.style.gap = '20px';
-      }
+      const postBtns = document.getElementById('postHardBtns');
+      postBtns.style.display = 'flex';
+      postBtns.style.justifyContent = 'center';
+      postBtns.style.gap = '20px';
     }
-    listenBtn.disabled = false;
-  }, 500);
+  } else {
+    // --- Show next word immediately ---
+    renderWord();
+  }
+
+  listenBtn.disabled = false;
 }
 
 // --- Incorrect answer ---
@@ -528,3 +576,4 @@ gameIntro();
 
 </body>
 </html>
+
