@@ -275,7 +275,7 @@
   z-index: 9999;
   text-align: center;">
   
-  ❌ Try Again!  
+
   <br><br>
   <button onclick="closeWrongPopup()" style="
     padding: 10px 20px;
@@ -300,6 +300,8 @@
           <button class="voice-btn" onclick="speakSentence(currentSentence,1)">🦜 Normal</button>
           <button class="voice-btn" onclick="speakSentence(currentSentence,1.3)">⚡ Fast</button>
           <button class="download-btn" onclick="downloadReport()">📥 Download Report</button>
+          <button id="prevBtn">Previous</button>
+<button id="nextBtn">Next</button>
         </div>
       </div>
     </div>
@@ -375,7 +377,7 @@
     currentSentenceIndex: 0,
     currentStationIndex: 0,
     stationCount: 5,
-    scoreToPass: 70,
+    scoreToPass: 60,
     report: [],            // array of attempts
     recognition: null,
     listening: false,
@@ -458,7 +460,7 @@
     if (!R) return null;
     try {
       const r = new R();
-      r.lang = "en-US";
+      r.lang = "en-IN";
       r.continuous = false;
       r.interimResults = false;
       r.maxAlternatives = 1;
@@ -557,26 +559,26 @@ function onRecognitionResult(ev) {
     const heardNorm = normalize(heard);
     const expectedNorm = normalize(expected);
 
-    const exactMatch = heardNorm === expectedNorm;
+const score = similarityScore(heardNorm, expectedNorm);
+const passed = score >= state.scoreToPass; // 70 by default.
 
-    state.report.push({ 
-        time: nowISO(), 
-        sentence: expected, 
-        heard, 
-        score: exactMatch ? 100 : 0, 
-        passed: exactMatch 
-    });
+state.report.push({ 
+    time: nowISO(), 
+    sentence: expected, 
+    heard, 
+    score: Math.round(score),
+    passed
+});
+   if (passed) {
+    resultEl.innerText = `✅ Good job! Score: ${Math.round(score)}%`;
+    progressEl.innerText = `✅ Station: ${state.currentStationIndex + 1}/${state.stationCount}`;
 
-    if (exactMatch) {
-        // correct → no Try Again
-        resultEl.innerText = "✅ Correct! Train moves!";
-        progressEl.innerText = `✅ Station: ${state.currentStationIndex + 1}/${state.stationCount}`;
-        moveTrainForward();
-    } else {
-        // wrong → Try Again shows only here
-        correctionEl.innerHTML = `🚉 Correct: <b>${expected}</b>`;
-        resultEl.innerText = "❌ Try again!";
-    }
+    correctionEl.innerHTML = "";
+    moveTrainForward();
+} else {
+    resultEl.innerText = `(Score: ${Math.round(score)}%)`;
+    correctionEl.innerHTML = `🚉 Correct sentence: <b>${expected}</b>`;
+}
 }
 
   // ====== Text-To-Speech (keeps your existing call style) ======
@@ -587,7 +589,7 @@ function onRecognitionResult(ev) {
     try {
       if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = "en-US";
+      u.lang = "en-IN";
       u.rate = rate;
       window.speechSynthesis.speak(u);
     } catch (e) {
@@ -795,7 +797,7 @@ window.downloadReport = function () {
             r.time,
             `"${r.sentence.replace(/"/g, '""')}"`, // escape quotes properly
             `"${r.heard.replace(/"/g, '""')}"`,
-            r.score,
+            r.score.toFixed(1),     // partial score with one decimal
             r.passed ? "TRUE" : "FALSE"
         ];
         csvRows.push(row.join(","));
@@ -814,6 +816,36 @@ window.downloadReport = function () {
     a.remove();
     URL.revokeObjectURL(url);
 };
+
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+
+if (prevBtn) {
+  prevBtn.addEventListener("click", () => {
+    // go to previous sentence
+    state.currentSentenceIndex--;
+    if (state.currentSentenceIndex < 0) {
+      const pool = sentencesPool();
+      state.currentSentenceIndex = pool.length - 1; // wrap around
+    }
+    // update UI
+    nextSentence();
+    updateTrainToStation(state.currentStationIndex, true); // keep train in place
+    resultEl.innerText = "";
+    correctionEl.innerText = "";
+  });
+}
+
+if (nextBtn) {
+  nextBtn.addEventListener("click", () => {
+    // move to next sentence manually
+    nextSentence();
+    updateTrainToStation(state.currentStationIndex, true); // keep train in place
+    resultEl.innerText = "";
+    correctionEl.innerText = "";
+  });
+};
+
   // ====== Initialization & hookup ======
   function init() {
     // If external allSentences provided (your /static data), use it
@@ -849,7 +881,7 @@ if (backBtn) {
       window.history.back();
     } else {
       // Fallback (safe home page)
-      window.location.href = "index.html";
+      window.location.href = "module.html";
     }
   });
 }
@@ -862,4 +894,6 @@ if (backBtn) {
   };
 
 })();
+
+
 </script>
