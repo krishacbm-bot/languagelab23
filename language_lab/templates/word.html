@@ -156,7 +156,11 @@ html, body {
   <button id="playAgainBtn" class="fun-btn">Play Again </button>
   <button id="nextModuleBtn" class="fun-btn">Next Module </button>
 </div>
-
+<div class="hud">
+  Score: <span id="score">0</span> |
+  Streak: <span id="streak">0</span> |
+  Level: <span id="level">1</span>
+</div>
 
 <script type="module">
 
@@ -250,10 +254,14 @@ function playTTS(text) {
 }
 // --- HUD & Render ---
 function updateHUD() {
-  wordCount.textContent = `Word: ${wordIdx + 1}/${LEVELS[levelIdx].words.length}`;
-  scoreBadge.textContent = `Score: ${score}`;
-}
+  const scoreEl = document.getElementById("score");
+  const streakEl = document.getElementById("streak");
+  const levelEl = document.getElementById("level");
 
+  if (scoreEl) scoreEl.textContent = score;
+  if (streakEl) streakEl.textContent = streak;
+  if (levelEl) levelEl.textContent = level;
+}
 
 function renderWord() {
   const w = LEVELS[levelIdx].words[wordIdx];
