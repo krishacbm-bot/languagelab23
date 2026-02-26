@@ -159,7 +159,8 @@ html, body {
 
 
 <script type="module">
-  import { ROBOT_WORDS } from './static/robotWords.js';
+
+  import { ROBOT_WORDS } from "{{ url_for('static', filename='robotWords.js') }}";
 
   // ✅ Get grade dynamically from localStorage (saved on index.html)
   let currentGrade = localStorage.getItem("selectedGrade") || "jr_kg";
