@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" href="data:,">
   <title>Language Lab – Talky Friends Lab</title>
   <style>
     body {
@@ -189,8 +188,8 @@
 </head>
 
 <body>
-  <script type="module" src="{{ url_for('static', filename='data/sentences.js') }}"></script>
-<script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script type="module" src="/static/data/sentences.js"></script>
+<script type="module" src="/static/js/main.js"></script>
   <h1> Language Lab – Talky Friends Lab</h1>
   <p id="disclaimer">👉 Choose your grade to begin your journey!</p>
 
@@ -250,30 +249,25 @@ function speakText(text) {
 
 // Initialize grade buttons UI
 function initGradeUI() {
+  // Show all rows
   document.querySelectorAll(".row").forEach(r => r.style.display = "flex");
 
   if (selectedGrade) {
+    // Highlight previously selected grade
     const step = document.querySelector(`.step[data-grade='${selectedGrade}']`);
     if (step) step.classList.add("selected");
     document.getElementById("disclaimer").style.display = "none";
+    speakText(`Welcome back! Continuing with Grade ${selectedGrade}.`);
   } else {
+    // First-time user: show disclaimer, no highlights
     document.getElementById("disclaimer").style.display = "block";
     document.querySelectorAll(".step").forEach(s => s.classList.remove("selected"));
+    speakText("Welcome to Talky Friends Lab. Choose your grade to begin!");
   }
 }
 
-window.addEventListener("load", () => {
-  initGradeUI();
-
-  document.body.addEventListener("click", () => {
-    if (selectedGrade) {
-      speakText(`Welcome back! Continuing with Grade ${selectedGrade}.`);
-    } else {
-      speakText("Welcome to Talky Friends Lab. Choose your grade to begin!");
-    }
-  }, { once: true });
-});
-  
+// Run on page load
+window.addEventListener("load", initGradeUI);
 
 // Handle back/forward navigation
 window.addEventListener("pageshow", (event) => {
