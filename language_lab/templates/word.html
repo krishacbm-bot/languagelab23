@@ -250,8 +250,8 @@ function playTTS(text) {
 }
 // --- HUD & Render ---
 function updateHUD(){
-  wordCount.textContent=`Word: ${wordIdx+1}/${LEVELS[levelIdx].words.length}`;
-  scoreBox.textContent=`Score: ${score}`;
+  wordCount.textContent = `Word: ${wordIdx+1}/${LEVELS[levelIdx].words.length}`;
+  scoreBadge.textContent = `Score: ${score}`;
 }
 
 function renderWord() {
