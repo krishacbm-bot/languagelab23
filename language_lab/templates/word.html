@@ -186,14 +186,14 @@ html, body {
 
 
   // ✅ The rest of your code stays exactly the same from here ↓
-  let levelIdx = 0, wordIdx = 0, score = 0;
+let levelIdx = 0, wordIdx = 0, score = 0, streak = 0;
   const wordDisplay = document.getElementById('wordDisplay');
   const phonetic = document.getElementById('phonetic');
   const playBtn = document.getElementById('playBtn');
   const listenBtn = document.getElementById('listenBtn');
   const feedback = document.getElementById('feedback');
   const wordCount = document.getElementById('wordCount');
-  const scoreBadge = document.getElementById('score');
+
   const portal = document.getElementById('portal');
   const football = document.getElementById('football');
   const robot1 = document.getElementById('robot1');
@@ -254,13 +254,9 @@ function playTTS(text) {
 }
 // --- HUD & Render ---
 function updateHUD() {
-  const scoreEl = document.getElementById("score");
-  const streakEl = document.getElementById("streak");
-  const levelEl = document.getElementById("level");
-
-  if (scoreEl) scoreEl.textContent = score;
-  if (streakEl) streakEl.textContent = streak;
-  if (levelEl) levelEl.textContent = level;
+  document.getElementById("score").textContent = score;
+  document.getElementById("streak").textContent = streak;
+  document.getElementById("level").textContent = LEVELS[levelIdx].name;
 }
 
 function renderWord() {
