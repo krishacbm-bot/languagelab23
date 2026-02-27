@@ -250,39 +250,29 @@ function speakText(text) {
 
 // Initialize grade buttons UI
 function initGradeUI() {
-  // Show all rows
   document.querySelectorAll(".row").forEach(r => r.style.display = "flex");
 
   if (selectedGrade) {
-    // Highlight previously selected grade
     const step = document.querySelector(`.step[data-grade='${selectedGrade}']`);
     if (step) step.classList.add("selected");
     document.getElementById("disclaimer").style.display = "none";
-    speakText(`Welcome back! Continuing with Grade ${selectedGrade}.`);
   } else {
-    // First-time user: show disclaimer, no highlights
     document.getElementById("disclaimer").style.display = "block";
     document.querySelectorAll(".step").forEach(s => s.classList.remove("selected"));
-    speakText("Welcome to Talky Friends Lab. Choose your grade to begin!");
   }
 }
 
-// Run on page load
 window.addEventListener("load", () => {
   initGradeUI();
 
-  // Wait for first user click before speaking
-  document.body.addEventListener("click", firstInteractionSpeak, { once: true });
+  document.body.addEventListener("click", () => {
+    if (selectedGrade) {
+      speakText(`Welcome back! Continuing with Grade ${selectedGrade}.`);
+    } else {
+      speakText("Welcome to Talky Friends Lab. Choose your grade to begin!");
+    }
+  }, { once: true });
 });
-
-function firstInteractionSpeak() {
-  if (selectedGrade) {
-    speakText(`Welcome back! Continuing with Grade ${selectedGrade}.`);
-  } else {
-    speakText("Welcome to Talky Friends Lab. Choose your grade to begin!");
-  }
-}
-
   
 
 // Handle back/forward navigation
