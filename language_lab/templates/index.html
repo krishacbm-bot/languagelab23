@@ -267,7 +267,22 @@ function initGradeUI() {
 }
 
 // Run on page load
-window.addEventListener("load", initGradeUI);
+window.addEventListener("load", () => {
+  initGradeUI();
+
+  // Wait for first user click before speaking
+  document.body.addEventListener("click", firstInteractionSpeak, { once: true });
+});
+
+function firstInteractionSpeak() {
+  if (selectedGrade) {
+    speakText(`Welcome back! Continuing with Grade ${selectedGrade}.`);
+  } else {
+    speakText("Welcome to Talky Friends Lab. Choose your grade to begin!");
+  }
+}
+
+  
 
 // Handle back/forward navigation
 window.addEventListener("pageshow", (event) => {
