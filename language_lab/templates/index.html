@@ -189,8 +189,8 @@
 </head>
 
 <body>
-  <script type="module" src="/static/data/sentences.js"></script>
-<script type="module" src="/static/js/main.js"></script>
+  <script type="module" src="{{ url_for('static', filename='data/sentences.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
   <h1> Language Lab – Talky Friends Lab</h1>
   <p id="disclaimer">👉 Choose your grade to begin your journey!</p>
 
