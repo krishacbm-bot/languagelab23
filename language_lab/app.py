@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import random
 import wave
+import os
 import json
 from vosk import Model, KaldiRecognizer
 
@@ -25,6 +26,11 @@ sentence_bank = {
 @app.route("/")
 def home():
     return render_template("index.html")
+
+
+@app.route("/paragraphwriting.html")
+def paragraph_page():
+    return render_template("paragraphwriting.html")
 
 # ---------------- Module Pages ----------------
 @app.route("/word.html")
@@ -124,5 +130,6 @@ def check_sentence():
     except Exception as e:
         return jsonify({"recognized": sentence, "matches": [], "error": str(e)})
 # ---------------- Run App ----------------
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
