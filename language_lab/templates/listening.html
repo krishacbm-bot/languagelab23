@@ -281,6 +281,7 @@ let level = levelsOrder[levelIndex];
 let index = 0;
 let score = 0;
 let attempts = 0;
+let forceCorrectAnswer = false;
 let currentDeck = decks[level];
 let reportData = [];
 
@@ -396,48 +397,75 @@ function nextQuestion() {
 
 // ✅ Check Answer
 function checkAnswer() {
+
   const user = (answerInput.value || '').trim().toLowerCase();
   if (!user) return;
+
   const correct = currentDeck[index].a.toLowerCase();
 
-  reportData.push({
-    level,
-    question: currentDeck[index].q,
-    correctAnswer: correct,
-    userAnswer: user,
-    correct: user === correct
-  });
+  // If student already failed 3 attempts
+  if (forceCorrectAnswer) {
+
+    if (user === correct) {
+
+      score++;
+      scoreChip.textContent = `Score: ${score} / ${currentDeck.length}`;
+
+      showPopup("✅ Correct! Moving to next question.", 1500);
+      speak("Correct");
+
+      answerInput.value = '';
+      attempts = 0;
+      forceCorrectAnswer = false;
+
+      setTimeout(nextQuestion, 1500);
+
+    } else {
+
+      showPopup("❌ Please type the correct answer to continue.", 2000);
+      speak("Type the correct answer to continue");
+      answerInput.value = '';
+
+    }
+
+    return;
+  }
 
   attempts++;
 
   if (user === correct) {
+
     score++;
     scoreChip.textContent = `Score: ${score} / ${currentDeck.length}`;
-    speak(`Correct! The answer is ${currentDeck[index].a}`);
-    showPopup(" Correct!", 2000);
+
+    showPopup("✅ Correct!", 1500);
+    speak("Correct");
+
     answerInput.value = '';
+    attempts = 0;
 
-    const nextPlanetIndex = index + 1;
-    if (nextPlanetIndex < rocketPath.length) {
-      flyRocketTo(rocketPath[nextPlanetIndex].x, rocketPath[nextPlanetIndex].y);
-    } else rocket.style.opacity = 0;
+    setTimeout(nextQuestion, 1500);
 
-    setTimeout(nextQuestion, 2000);
   } else {
-    if (attempts >= 3) {
-      showPopup(`❌ 3 attempts done! The correct answer is: ${currentDeck[index].a}`, 5000);
-      speak(`Incorrect three times. The correct answer is ${currentDeck[index].a}`);
-      answerInput.value = '';
-      setTimeout(nextQuestion, 5200);
-      attempts = 0;
-    } else {
-      showPopup(`❌ Incorrect! Attempt ${attempts} of 5`, 1500);
-      speak(`Incorrect. Try again. Attempt ${attempts} of 5`);
-      answerInput.value = '';
-    }
-  }
-}
 
+    if (attempts >= 3) {
+
+showPopup(` 3 attempts done! Correct answer is: ${currentDeck[index].a}. Write the correct answer to move ahead.`, 5000);
+
+      forceCorrectAnswer = true;
+      answerInput.value = '';
+
+    } else {
+
+      showPopup(`❌ Incorrect! Attempt ${attempts} of 3`, 1500);
+      speak("Incorrect. Try again.");
+      answerInput.value = '';
+
+    }
+
+  }
+
+}
 // ✅ Popups
 function showPopup(message, duration = 3000) {
   msg.textContent = message;
